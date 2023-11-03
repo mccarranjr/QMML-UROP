@@ -53,11 +53,11 @@ def find_neighbors(lattice_size,periodic=False):
         # currently the hamiltonian has no repeats ex: if we have Z0Z1 we don't also include Z1Z0
         # if we want repeats we for periodic boundaries we can uncomment the code below 
                         
-               # if i == lattice_size-1:
+               #if i == lattice_size-1:
                     #neighbor_site = j
                     #all_neighbors[site].append(neighbor_site)
 
-               # if j == lattice_size-1:
+                #if j == lattice_size-1:
                     #neighbor_site = site-lattice_size+1
                     #all_neighbors[site].append(neighbor_site)
     return all_neighbors
@@ -103,6 +103,8 @@ def variational_circuit(params, num_qubits):
     """
     for i in range(num_qubits):
         qml.RY(params[i], wires=i)
+    for i in range(num_qubits):
+        qml.RX(params[i],wires=i)
     for i in range(num_qubits-1):
         qml.CNOT(wires=[i, i + 1])
 
