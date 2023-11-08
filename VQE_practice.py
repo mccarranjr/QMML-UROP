@@ -84,44 +84,51 @@ def construct_hamiltonian(J,b,lattice_size,periodic):
     hamiltonian = qml.Hamiltonian(coeffs,hamiltonian_terms)
     return hamiltonian
 
-
+neighbors = find_neighbors(lattice_size,periodic)
 ising_hamiltonian = construct_hamiltonian(J,b,lattice_size,periodic)
 print(f'Hamiltonian:\n {ising_hamiltonian}')
 
 
-def variational_rot_circuit(params, wires=num_qubits-1):
+def variational_rot_circuit(params, wires=num_qubits-1,neighbors=None):
     """
     Variational circuit taken from Pennylane tutorial
     """
     for i in range(num_qubits):
-        qml.RX(params[i], wires=i)
-        qml.RY(params[i+1], wires=i)
+        qml.RY(params[i][0], wires=i)
+        qml.RZ(params[i][1], wires=i)
+        for neighbor in neighbors[i]:
+            qml.CNOT(wires=[i,neighbor])
+        qml.RY(params[i][2])
 
-def variational_circuit(params, num_qubits):
+def variational_circuit(params, num_qubits, neighbors):
     """
     Variational circuit taken from Pennylane tutorial
     """
     for i in range(num_qubits):
-        qml.RY(params[i], wires=i)
-    for i in range(num_qubits):
-        qml.RX(params[i],wires=i)
+        ix = 3*i
+        qml.RY(params[ix], wires=i)
+        qml.RX(params[ix+1],wires=i)
     for i in range(num_qubits-1):
-        qml.CNOT(wires=[i, i + 1])
+        for j in neighbors[i]:
+            qml.CNOT(wires=[i, j])
+    for i in range(num_qubits):
+        qml.RY(params[ix+2],wires=i)
+
 
 
 
 dev = qml.device("default.qubit", wires=num_qubits)
 @qml.qnode(dev)
-def vqe(params, h, J, num_qubits):
-    variational_circuit(params, num_qubits)
+def vqe(params, num_qubits):
+    variational_circuit(params, num_qubits, neighbors)
     return qml.expval(ising_hamiltonian)
 
 # Initialize random parameters
-params = np.random.rand(2*num_qubits)
-
+params = np.random.rand(3*num_qubits)
+#params = [np.random.uniform(0, 2 * np.pi) for _ in range(2*num_qubits)]
 
 # Run the VQE 
-result = minimize(lambda params: vqe(params, b, J, num_qubits), params, method="CG")
+result = minimize(lambda params: vqe(params, num_qubits), params, method="CG")
 
 
 optimized_params = result.x
