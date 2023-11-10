@@ -30,7 +30,7 @@ obs = hamiltonian.ops #Return the operators defining the Hamiltonian.
 groups = qml.pauli.group_observables(obs) #partitions observables into qubit-wise commuting, 
 n_groups = len(groups)                    #fully commuting, or anti-commuting
 
-print(f"our hamiltonian is {hamiltonian}\n")
+print(f"our hamiltonian is \n {hamiltonian}\n")
 print(f"number of ops in H: {len(obs)}, number of qwc groups: {n_groups}\n")
 print(f"Each group has sizes {[len(_) for _ in groups]}\n")
 
@@ -60,14 +60,14 @@ shotss = np.arange(20,2000,100)
 
 for shots in shotss:
     for _ in range(10):
-        #
+        
         dev_finite = qml.device("default.qubit",wires=range(num_qubits),shots=int(shots))
         @qml.qnode(dev_finite,interface="autograd")
         def qnode_finite(hamiltonian):
             circuit(optimal_params,num_qubits,neighbors)
             return qml.expval(hamiltonian)
 
-        with qml.Tracker(dev_finite) as tracker_finite:
+        with qml.Tracker(dev_finite) as tracker_finite: #lets us store number of device executions 
             res_finite = qnode_finite(hamiltonian)
 
         dev_shadow = qml.device("default.qubit",wires=range(num_qubits),shots=int(shots)*n_groups)
@@ -77,8 +77,9 @@ for shots in shotss:
             return qml.shadow_expval(hamiltonian)#classical_shadow(wires=range(num_qubits))
 
         with qml.Tracker(dev_shadow) as tracker_shadows:
-            res_shadow = qnode(hamiltonian)
-            #could also have used:
+            res_shadow = qnode(hamiltonian) 
+
+            #could also have done classical shadow with the code below but this is not differentiable:
             #bits, recipes = qnode()
             #shadow = ClassicalShadow(bits,recipes)
             #res_shadow = shadow.expval(hamiltonian,k=1)

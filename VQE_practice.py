@@ -106,7 +106,8 @@ def VQE(num_qubits, hamiltonian, neighbors):
     optimized_params = result.x
     ground_state_energy = result.fun
 
-    return optimized_params, ground_state_energy
     #print("Optimized Parameters:", optimized_params)
     #print("Minimum Energy:", ground_state_energy)
+    return optimized_params, ground_state_energy
+VQE(num_qubits,ising_hamiltonian,neighbors)
 #print(VQE(num_qubits,ising_hamiltonian,neighbors))
