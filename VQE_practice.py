@@ -19,7 +19,6 @@ is_periodic = lambda periodic: periodic == 1
 periodic = is_periodic(args.periodic)
 
 num_qubits = lattice_size**2
-
 def find_neighbors(lattice_size,periodic=False):
     """
     takes in a lattice size and returns a dictionary whose keys are sites
@@ -39,36 +38,23 @@ def find_neighbors(lattice_size,periodic=False):
                 if is_a_valid_site(x,y): #make sure neighbors are in the lattice
                     neighbor_site = x*lattice_size + y
                     if neighbor_site > site:
-                        all_neighbors[site].add(neighbor_site)
-            print(periodic,'periodic val')
+                         all_neighbors[site].add(neighbor_site)
             if periodic: #for periodic boundary conditions
                 if i == 0:
                     neighbor_site = lattice_size**2-lattice_size+site
                     all_neighbors[site].add(neighbor_site)
-
                 if j == 0:
                     neighbor_site = site+lattice_size-1
                     all_neighbors[site].add(neighbor_site)
-
-        # currently the hamiltonian has no repeats ex: if we have Z0Z1 we don't also include Z1Z0
-        # if we want repeats we for periodic boundaries we can uncomment the code below 
-                        
-               #if i == lattice_size-1:
-                    #neighbor_site = j
-                    #all_neighbors[site].append(neighbor_site)
-
-                #if j == lattice_size-1:
-                    #neighbor_site = site-lattice_size+1
-                    #all_neighbors[site].append(neighbor_site)
     return all_neighbors
 
-def construct_hamiltonian(J,b,lattice_size,periodic):
+def construct_hamiltonian(J,b,lattice_size,periodic,neighbors):
     """
     Given the coupling strength term and the magnetic field strength
     returns the 2-D transverse field ising model hamiltonian for a 
     square lattice
     """
-    neighbors = find_neighbors(lattice_size,periodic)
+    #neighbors = find_neighbors(lattice_size,periodic)
     hamiltonian_terms = []
     coeffs = []
 
@@ -81,58 +67,46 @@ def construct_hamiltonian(J,b,lattice_size,periodic):
             hamiltonian_terms.append(qml.PauliZ(i)@qml.PauliZ(j))
             hamiltonian_terms = list(set(hamiltonian_terms))
 
-    hamiltonian = qml.Hamiltonian(coeffs,hamiltonian_terms)
+    hamiltonian = qml.Hamiltonian(coeffs,hamiltonian_terms, grouping_type='qwc')
     return hamiltonian
 
 neighbors = find_neighbors(lattice_size,periodic)
-ising_hamiltonian = construct_hamiltonian(J,b,lattice_size,periodic)
-print(f'Hamiltonian:\n {ising_hamiltonian}')
+ising_hamiltonian = construct_hamiltonian(J,b,lattice_size,periodic,neighbors)
+#print(f'Hamiltonian:\n {ising_hamiltonian}')
 
+def VQE(num_qubits, hamiltonian, neighbors):
 
-def variational_rot_circuit(params, wires=num_qubits-1,neighbors=None):
-    """
-    Variational circuit taken from Pennylane tutorial
-    """
-    for i in range(num_qubits):
-        qml.RY(params[i][0], wires=i)
-        qml.RZ(params[i][1], wires=i)
-        for neighbor in neighbors[i]:
-            qml.CNOT(wires=[i,neighbor])
-        qml.RY(params[i][2])
-
-def variational_circuit(params, num_qubits, neighbors):
-    """
-    Variational circuit taken from Pennylane tutorial
-    """
-    for i in range(num_qubits):
-        ix = 3*i
-        qml.RY(params[ix], wires=i)
-        qml.RX(params[ix+1],wires=i)
-    for i in range(num_qubits-1):
-        for j in neighbors[i]:
-            qml.CNOT(wires=[i, j])
-    for i in range(num_qubits):
-        qml.RY(params[ix+2],wires=i)
+    def variational_circuit(params, num_qubits, neighbors):
+        """
+        Variational circuit taken from Pennylane tutorial
+        """
+        for i in range(num_qubits):
+            qml.RY(params[3*i], wires=i)
+            qml.RX(params[3*i+1],wires=i)
+            for j in neighbors[i]:
+                qml.CNOT(wires=[i, j])
+            qml.RY(params[3*i+2],wires=i)
 
 
 
 
-dev = qml.device("default.qubit", wires=num_qubits)
-@qml.qnode(dev)
-def vqe(params, num_qubits):
-    variational_circuit(params, num_qubits, neighbors)
-    return qml.expval(ising_hamiltonian)
+    dev = qml.device("default.qubit", wires=num_qubits)
+    @qml.qnode(dev)
+    def vqe(params, num_qubits):
+        variational_circuit(params, num_qubits, neighbors)
+        return qml.expval(hamiltonian)
 
-# Initialize random parameters
-params = np.random.rand(3*num_qubits)
-#params = [np.random.uniform(0, 2 * np.pi) for _ in range(2*num_qubits)]
+    # Initialize random parameters
+    params = np.random.rand(3*num_qubits)
 
-# Run the VQE 
-result = minimize(lambda params: vqe(params, num_qubits), params, method="CG")
+    # Run the VQE 
+    result = minimize(lambda params: vqe(params, num_qubits), params, method="CG")
 
 
-optimized_params = result.x
-ground_state_energy = result.fun
+    optimized_params = result.x
+    ground_state_energy = result.fun
 
-print("Optimized Parameters:", optimized_params)
-print("Minimum Energy:", ground_state_energy)
+    return optimized_params, ground_state_energy
+    #print("Optimized Parameters:", optimized_params)
+    #print("Minimum Energy:", ground_state_energy)
+#print(VQE(num_qubits,ising_hamiltonian,neighbors))
