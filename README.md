@@ -1,5 +1,5 @@
 # QMML-UROP
-UROP Project Code
+Quantum Machine Learning UROP Project Code
 
 Tasks: Run VQE to find the exact groundstate energy for the 2-D Transverse Field Ising Model assuming square lattice structure. Then incorporate classical shadow method and compare the expected energy with the exact energy
 
