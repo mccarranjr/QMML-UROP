@@ -95,7 +95,7 @@ def ising_2_level_variational_circuit(params, num_qubits, neighbors):
         qml.RX(params[6*i+1],wires=i)
         for j in neighbors[i]:
             qml.CNOT(wires=[i, j])
-        qml.RY(params[6*i+2],wires=i)
+        qml.RX(params[6*i+2],wires=i)
         qml.RY(params[6*i+3], wires=i)
         qml.RX(params[6*i+4],wires=i)
         for j in neighbors[i]:

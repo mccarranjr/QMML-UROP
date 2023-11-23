@@ -5,7 +5,7 @@ import argparse
 
 from functions import (
     find_neighbors, construct_hamiltonian,
-    ising_variational_circuit
+    ising_variational_circuit, ising_2_level_variational_circuit
 )
 
 
@@ -38,7 +38,7 @@ def VQE(num_qubits, hamiltonian, neighbors):
         return qml.expval(hamiltonian)
 
     # Initialize random parameters
-    params = np.random.rand(3*num_qubits)
+    params = np.random.rand(6*num_qubits)
 
     # Run the VQE 
     result = minimize(lambda params: vqe(params, num_qubits), params, method="CG")
