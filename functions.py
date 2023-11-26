@@ -53,27 +53,6 @@ def construct_hamiltonian(J,b,lattice_size,periodic,neighbors):
     hamiltonian = qml.Hamiltonian(coeffs,hamiltonian_terms, grouping_type='qwc')
     return hamiltonian
 
-def construct_full_hamiltonian(J,b,lattice_size,periodic,neighbors):
-    """
-    Given the coupling strength term and the magnetic field strength
-    returns the 2-D transverse field ising model hamiltonian for a 
-    square lattice
-    """
-    #neighbors = find_neighbors(lattice_size,periodic)
-    hamiltonian_terms = []
-    coeffs = []
-
-    for i in range(lattice_size**2):
-        coeffs.append(-b) 
-        hamiltonian_terms.append(qml.PauliX(i))
-        for j in neighbors[i]:
-#
-            coeffs.append(-J) 
-            hamiltonian_terms.append(qml.PauliZ(i)@qml.PauliZ(j))
-            hamiltonian_terms = list(set(hamiltonian_terms))
-
-    hamiltonian = qml.Hamiltonian(coeffs,hamiltonian_terms, grouping_type='qwc')
-    return hamiltonian
 def ising_variational_circuit(params, num_qubits, neighbors):
     """
     Variational circuit taken from Pennylane tutorial

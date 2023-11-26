@@ -1,9 +1,7 @@
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane import ClassicalShadow, classical_shadow, expval
-from functions import (
-    find_neighbors, construct_hamiltonian, ising_variational_circuit,
-    ising_2_level_variational_circuit, construct_full_hamiltonian 
+from shadow_functions import (
+    find_neighbors, construct_hamiltonian 
     )
 from VQE_practice import VQE
 from scipy.linalg import expm
@@ -51,7 +49,7 @@ def circuit_template_1_level(params, neighbors, obs=None):
     return [qml.expval(o) for o in obs]
 
 
-num_snapshots = 1000
+#num_snapshots = 1000
 def calculate_classical_shadow(circuit_template, params, shadow_size, num_qubits):
     unitary_ensemble = [qml.PauliX, qml.PauliY, qml.PauliZ]
     unitary_ids = np.random.randint(0, 3, size=(shadow_size, num_qubits))
@@ -71,10 +69,6 @@ def collect_shadow(num_snapshots):
         circuit_template_1_level, params, num_snapshots, num_qubits
         )
     return shadow
-#print(collect_shadow(num_snapshots)[0])
-
-#tau = 0
-#im_time_evo_op = expm(-tau*qml.matrix(hamiltonian))
 
 def snapshot_state(b_list, obs_list):
     num_qubits = len(b_list)
@@ -109,35 +103,24 @@ def shadow_state_reconstruction(shadow):
 
     return shadow_rho / num_snapshots
 
+def run(num_snapshots,exact_energy):
+    shadow_state = shadow_state_reconstruction(collect_shadow(num_snapshots))
+    ham = qml.matrix(hamiltonian)
+    shadow_energy = np.trace(shadow_state@ham)
+    return np.abs((shadow_energy-exact_energy)**2)
+
 out = []
+for i in range(10):
+    out.append(run(10000,curr_energy))
+error_bar = np.std(out)/np.sqrt(10)
+print(np.mean(out),error_bar)
 
-'''def average():
-    for i in range(10):
-        shadow_state = shadow_state_reconstruction(collect_shadow(num_snapshots))
-        ham = qml.matrix(hamiltonian)
-        im_time_evolved_state = im_time_evo_op@shadow_state#@im_time_evo_op.T
-        im_time_evolved_state = im_time_evolved_state/np.sqrt(im_time_evolved_state.T@im_time_evolved_state)
-        time_ev_energy = np.trace(im_time_evolved_state@ham)
-        out.append(time_ev_energy)
-    avg = sum(out)/10
-    print(f'avg = {avg}')
-    np_out = np.array([out])
-    print(f'mean = {np.mean(np_out)} /n std = {np.std(np_out)}')'''
-
-
-
-
-shadow_state = shadow_state_reconstruction(collect_shadow(num_snapshots))
-#print(shadow_state)
-print(f'The reconstructed density matrix has dimensions {shadow_state.shape}')
-ham = qml.matrix(hamiltonian)
-#im_time_evolved_state = im_time_evo_op@shadow_state@im_time_evo_op.T
-#im_time_evolved_state /= np.sqrt(im_time_evolved_state.T@im_time_evolved_state)
-shadow_energy = np.trace(shadow_state@ham)
-#time_ev_energy = np.trace(im_time_evolved_state@ham)
-print(f'Our classical shadow representation of the groundstate gives E = {shadow_energy}\n\n')
-#print(f'Total magnitude is {np.sqrt(np.inner(shadow_energy.conj().T,shadow_energy))}')
-print(f'The error is {shadow_energy-curr_energy}')
+#shadow_state = shadow_state_reconstruction(collect_shadow(num_snapshots))
+#print(f'\nThe reconstructed density matrix has dimensions {shadow_state.shape}\n')
+#ham = qml.matrix(hamiltonian)
+#shadow_energy = np.trace(shadow_state@ham)
+#print(f'Our classical shadow representation of the groundstate gives E = {shadow_energy}\n')
+#print(f'The error is {shadow_energy-curr_energy}')
 
 
 
